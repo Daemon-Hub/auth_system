@@ -4,7 +4,7 @@ from typing import Optional
 from jose import JWTError, jwt
 
 
-from settings import settings 
+from .settings import settings 
 
 
 # Конфигурация для Argon2 
