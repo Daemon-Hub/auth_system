@@ -1,5 +1,7 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column, DateTime
+from datetime import datetime, timezone
 from uuid import UUID, uuid7
+
 
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid7, primary_key=True) 
@@ -10,3 +12,16 @@ class User(SQLModel, table=True):
     password: str
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
+    
+
+class BlacklistedToken(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid7, primary_key=True)
+    jti: str = Field(unique=True, index=True)
+    user_id: UUID = Field(foreign_key="user.id")
+    expires_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )

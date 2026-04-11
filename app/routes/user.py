@@ -1,17 +1,22 @@
 from fastapi import Depends, HTTPException, status, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
 from ..database import get_session
 from ..schemas.user import (
     RegisterRequest, RegisterResponse,
     LoginRequest, LoginResponse, 
-    UpdateUserRequest, UpdateUserResponse
+    UpdateUserRequest, ChangePasswordRequest
 )
 from ..models import User
-from ..auth.jwt import create_access_token
-from ..auth.password import hash_password, verify_password
-from ..auth.dependencies import get_current_active_user
+from ..security import (
+    create_access_token, 
+    decode_token, 
+    blacklist_token,
+    hash_password, 
+    verify_password,
+    get_current_active_user, 
+    oauth2_scheme
+)
 from ..crud.user import get_user_by_email
 
 router = APIRouter(prefix="/users")
@@ -75,18 +80,26 @@ async def login(
     )
 
 
+@router.post("/logout", status_code=200)
+async def logout(
+    current_user: User = Depends(get_current_active_user),
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_session)
+):
+    await blacklist_token(
+        token=token, 
+        user_id=current_user.id, 
+        db=db
+    )
+    return { "detail": "Successfully logged out" }
+
+
 @router.patch("/me")
 async def update_user(
     request: UpdateUserRequest, 
     current_user: User | None = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_session)
 ):
-    if current_user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, 
-            detail="Not authenticated"
-        )
-    
     update_data = request.model_dump(exclude_unset=True)
 
     if not update_data:
@@ -103,3 +116,34 @@ async def update_user(
     
     return update_data
 
+
+@router.patch("/me/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    current_user: User | None = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_session)
+):
+    if not verify_password(request.current_password, current_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+        
+    if request.new_password == request.current_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password cannot be the same as the current password"
+        )
+    
+    if request.new_password != request.new_password_confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New passwords do not match"
+        )
+    
+    current_user.password = hash_password(request.new_password)
+    
+    db.add(current_user)
+    await db.commit()
+    
+    return {"detail": "Password updated successfully"}

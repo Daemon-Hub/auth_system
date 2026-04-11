@@ -31,17 +31,8 @@ class UpdateUserRequest(SQLModel):
     last_name: Optional[str] = None
     patronymic: Optional[str] = None
     email: Optional[EmailStr] = None
-    
-    model_config = {
-        "extra": "forbid"
-    }
 
-class UpdateUserResponse(SQLModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    patronymic: Optional[str] = None
-    email: Optional[EmailStr] = None
-    
-    model_config = {
-        "from_attributes": True
-    }
+class ChangePasswordRequest(SQLModel):
+    current_password: str
+    new_password: str
+    new_password_confirm: str

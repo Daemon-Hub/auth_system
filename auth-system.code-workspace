@@ -1,0 +1,66 @@
+{
+    "folders": [
+        {
+            "name": "auth-system",
+            "path": "."
+        },
+        {
+            "name": "app",
+            "path": "app"
+        },
+    ],
+    "settings": {
+        // --- PYTHON ---
+        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+        // --- FILES ---
+        "files.exclude": {
+            "**/__init__.py": true,
+            "**/__pycache__": true,
+            "**/.venv": true,
+            "**/.git": true,
+            "**/.python-version": true,
+            "**/pyproject.toml": true,
+            "**/uv.lock": true,
+        },
+        // --- TERMINAL ---
+        "terminal.integrated.defaultProfile.windows": "PowerShell",
+        // --- ENV ---
+        "dotenv.enableAutocloaking": true,
+    },
+    "extensions": {
+        "recommendations": [
+            "usernamehw.errorlens",
+            "dotenv.dotenv-vscode",
+            "damildrizzy.fastapi-snippets",
+            "ms-ceintl.vscode-language-pack-ru",
+            "ms-python.isort",
+            "fill-labs.dependi",
+            "magabde.focus-microservice",
+            "ms-vscode.powershell",
+            "ms-python.vscode-pylance",
+            "ms-python.python",
+            "ms-python.vscode-python-envs",
+            "kevinrose.vsc-python-indent"
+        ]
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Run server reload",
+                "type": "shell",
+                "command": "uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+                "group": "build"
+            },
+            {
+                "label": "docker up",
+                "type": "shell",
+                "command": "wsl -d Ubuntu --exec sudo docker compose up -d",
+                "options": {
+                    "cwd": "${workspaceFolder}"
+                },
+                "group": "build"
+            }
+        ]
+    }
+}
