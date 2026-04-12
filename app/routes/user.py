@@ -1,16 +1,17 @@
-from fastapi import Depends, HTTPException, status, APIRouter
+from fastapi import Depends, HTTPException, status, APIRouter, Response, Cookie
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..settings import settings
 from ..database import get_session
 from ..schemas.user import (
     RegisterRequest, RegisterResponse,
-    LoginRequest, LoginResponse, 
+    LoginRequest, AccessTokenResponse, 
     UpdateUserRequest, ChangePasswordRequest
 )
 from ..models import User
 from ..security import (
     create_access_token, 
-    decode_token, 
+    generate_refresh_token,
     blacklist_token,
     hash_password, 
     verify_password,
@@ -18,6 +19,11 @@ from ..security import (
     oauth2_scheme
 )
 from ..crud.user import get_user_by_email
+from ..crud.refresh_token import (
+    add_refresh_token, 
+    delete_refresh_token,
+    get_refresh_token
+)
 
 router = APIRouter(prefix="/users")
 
@@ -60,11 +66,12 @@ async def register(
     )
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=AccessTokenResponse)
 async def login(
     request: LoginRequest,
-    db: AsyncSession = Depends(get_session)
-) -> LoginResponse:
+    db: AsyncSession = Depends(get_session),
+    response: Response = None,
+) -> AccessTokenResponse:
     user = await get_user_by_email(request.email, db)
     
     if not user:
@@ -85,23 +92,43 @@ async def login(
             detail="Invalid email or password"
         )
     
-    access_token = create_access_token(data={"sub": str(user.id)})
+    access_token = create_access_token(str(user.id))
+    plain_refresh = generate_refresh_token()
     
-    return LoginResponse(
-        access_token=access_token,
+    await add_refresh_token(token=plain_refresh, user_id=user.id, db=db)
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=plain_refresh,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/"
     )
+    
+    return AccessTokenResponse(access_token=access_token)
 
 
 @router.post("/logout", status_code=200)
 async def logout(
     current_user: User = Depends(get_current_active_user),
     token: str = Depends(oauth2_scheme),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(get_session),
+    response: Response = None
 ):
+    await delete_refresh_token(user_id=current_user.id, db=db)
     await blacklist_token(
         token=token, 
         user_id=current_user.id, 
         db=db
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        httponly=True,
+        secure=True,
+        samesite="strict"
     )
     return { "detail": "Successfully logged out" }
 
@@ -109,7 +136,7 @@ async def logout(
 @router.patch("/me")
 async def update_user(
     request: UpdateUserRequest, 
-    current_user: User | None = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_session)
 ):
     update_data = request.model_dump(exclude_unset=True)
@@ -175,3 +202,45 @@ async def delete_account(
     await db.commit()
     
     return {"detail": "Account deleted successfully"}
+
+
+@router.post("/refresh")
+async def refresh_token(
+    refresh_token: str = Cookie(None, alias="refresh_token"),
+    db: AsyncSession = Depends(get_session),
+    response: Response = None
+) -> AccessTokenResponse:
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401, 
+            detail="Refresh token missing"
+        )
+
+    token_record = await get_refresh_token(token=refresh_token, db=db)
+    if not token_record:
+        raise HTTPException(
+            status_code=401, 
+            detail="Invalid or expired refresh token"
+        )
+
+    access_token = create_access_token(str(token_record.user_id))
+    plain_refresh = generate_refresh_token()
+    
+    await delete_refresh_token(user_id=token_record.user_id, db=db)
+    await add_refresh_token(
+        token=plain_refresh, 
+        user_id=token_record.user_id, 
+        db=db
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=plain_refresh,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400,
+        path="/"
+    )
+
+    return AccessTokenResponse(access_token=access_token)

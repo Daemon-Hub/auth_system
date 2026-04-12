@@ -22,7 +22,7 @@ class LoginRequest(SQLModel):
     email: EmailStr
     password: str
     
-class LoginResponse(SQLModel):
+class AccessTokenResponse(SQLModel):
     access_token: str
     token_type: str = "bearer"
     

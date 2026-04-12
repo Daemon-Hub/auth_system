@@ -5,16 +5,20 @@ from uuid import uuid4
 
 from ..settings import settings 
 
-__all__ = ("create_access_token", "decode_token")
+__all__ = (
+    "create_access_token", 
+    "decode_token",
+    "generate_refresh_token"
+)
 
-def create_access_token(data: dict):
-    to_encode = data.copy()
+def create_access_token(sub: str) -> str:
     access_token_expires = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     jti = str(uuid4())
-    to_encode.update({
+    to_encode = {
+        "sub": sub,
         "exp": access_token_expires,
         "jti": jti,
-    })
+    }
     encoded_jwt = jwt.encode(
         to_encode, 
         settings.SECRET_KEY, 
@@ -33,3 +37,7 @@ def decode_token(token: str) -> Optional[dict]:
         return payload
     except JWTError:
         return None
+
+
+def generate_refresh_token() -> str:
+    return __import__('secrets').token_urlsafe(64)

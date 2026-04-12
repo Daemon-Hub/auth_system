@@ -1,4 +1,4 @@
-from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 from sqlmodel import select
 from uuid import UUID
@@ -28,4 +28,4 @@ async def is_token_blacklisted(jti: str, db: AsyncSession) -> bool:
     result = await db.execute(
         select(BlacklistedToken).where(BlacklistedToken.jti == jti)
     )
-    return result.first() is not None
+    return result.scalar_one_or_none() is not None

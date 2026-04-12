@@ -14,7 +14,7 @@
         "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
         // --- FILES ---
         "files.exclude": {
-            "**/__init__.py": true,
+            // "**/__init__.py": true,
             "**/__pycache__": true,
             "**/.venv": true,
             "**/.git": true,
@@ -25,22 +25,20 @@
         // --- TERMINAL ---
         "terminal.integrated.defaultProfile.windows": "PowerShell",
         // --- ENV ---
-        "dotenv.enableAutocloaking": true,
+        "dotenv.enableAutocloaking": false,
     },
     "extensions": {
         "recommendations": [
-            "usernamehw.errorlens",
-            "dotenv.dotenv-vscode",
-            "damildrizzy.fastapi-snippets",
-            "ms-ceintl.vscode-language-pack-ru",
-            "ms-python.isort",
-            "fill-labs.dependi",
-            "magabde.focus-microservice",
-            "ms-vscode.powershell",
+            "ms-python.vscode-python-envs",
             "ms-python.vscode-pylance",
             "ms-python.python",
-            "ms-python.vscode-python-envs",
-            "kevinrose.vsc-python-indent"
+            "ms-python.isort",
+            "ms-ceintl.vscode-language-pack-ru",
+            "ms-vscode.powershell",
+            "damildrizzy.fastapi-snippets",
+            "kevinrose.vsc-python-indent",
+            "usernamehw.errorlens",
+            "fill-labs.dependi",
         ]
     },
     "tasks": {
