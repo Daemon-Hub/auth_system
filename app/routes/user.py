@@ -67,7 +67,19 @@ async def login(
 ) -> LoginResponse:
     user = await get_user_by_email(request.email, db)
     
-    if not user or not verify_password(request.password, user.password):
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="The user with this email address was not found"
+        )
+        
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive"
+        )
+    
+    if not verify_password(request.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
@@ -147,3 +159,19 @@ async def change_password(
     await db.commit()
     
     return {"detail": "Password updated successfully"}
+
+
+@router.delete("/me")
+async def delete_account(
+    current_user: User = Depends(get_current_active_user),
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_session)
+):
+    await logout(current_user=current_user, token=token, db=db)
+    
+    current_user.is_active = False
+    
+    db.add(current_user)
+    await db.commit()
+    
+    return {"detail": "Account deleted successfully"}

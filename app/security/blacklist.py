@@ -6,6 +6,8 @@ from uuid import UUID
 from .jwt import decode_token
 from ..models import BlacklistedToken
 
+__all__ = ("blacklist_token", "is_token_blacklisted")
+
 async def blacklist_token(token: str, user_id: UUID, db: AsyncSession):
     payload = decode_token(token)
     

@@ -9,6 +9,8 @@ from ..database import get_session
 from ..crud.user import get_user_by_id
 
 
+__all__ = ("oauth2_scheme", "get_current_active_user")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
