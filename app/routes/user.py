@@ -95,6 +95,7 @@ async def login(
     access_token = create_access_token(str(user.id))
     plain_refresh = generate_refresh_token()
     
+    await delete_refresh_token(user_id=user.id, db=db)
     await add_refresh_token(token=plain_refresh, user_id=user.id, db=db)
     
     response.set_cookie(

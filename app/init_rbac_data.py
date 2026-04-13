@@ -17,10 +17,6 @@ ROLES_DEFINITIONS = [
         description="Модерация контента и управление пользователями"
     ),
     RoleCreate(
-        name="editor",
-        description="Создание и редактирование контента"
-    ),
-    RoleCreate(
         name="user",
         description="Базовый доступ для обычных пользователей"
     ),
@@ -89,10 +85,6 @@ ROLE_PERMISSIONS = {
         "comments.read", "comments.update", "comments.delete", "comments.moderate",
         "analytics.read", "analytics.export",
     ],    
-    "editor": [
-        "posts.read", "posts.create", "posts.update",
-        "comments.read", "comments.create", "comments.update",
-    ],
     "user": [
         "users.read",
         "posts.read", "posts.create", "posts.update",

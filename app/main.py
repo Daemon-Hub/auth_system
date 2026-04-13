@@ -5,7 +5,7 @@ import logging
 
 from .settings import settings
 from .database import create_tables, AsyncSessionLocal
-from .routes.user import router
+from .routes import routes
 from .init_rbac_data import init_rbac_data
 from .init_users_with_roles import init_users_with_roles
 
@@ -29,7 +29,6 @@ async def lifespan(app: FastAPI):
     
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ALLOWED_ORIGINS,       
@@ -37,3 +36,5 @@ app.add_middleware(
     allow_methods=["*"],         
     allow_headers=["*"],         
 )
+for router in routes:
+    app.include_router(router)
