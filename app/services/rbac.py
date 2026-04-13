@@ -1,10 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from sqlmodel import select
+from typing import List
+from uuid import UUID
 
 from ..schemas.rbac.permission import PermissionCreate
 from ..schemas.rbac.role import RoleCreate
-from ..models.rbac import Permission, Role
+from ..models.rbac import Permission, Role, UserRole
 
 
 class RBACService:
@@ -41,3 +43,28 @@ class RBACService:
         )
         return permission.scalar_one_or_none()
    
+    # ==================== UserRole методы ====================
+     
+    @staticmethod
+    async def add_roles_to_user(
+        db: AsyncSession,
+        user_id: UUID,
+        role_ids: List[UUID],
+        assigned_by: Optional[UUID] = None
+    ) -> None:
+        for role_id in role_ids:
+            user_role = await db.execute(
+                select(UserRole).where(
+                    UserRole.user_id == user_id,
+                    UserRole.role_id == role_id
+                )   
+            )
+            if not user_role.first():
+                ur = UserRole(
+                    user_id=user_id, 
+                    role_id=role_id, 
+                    assigned_by=assigned_by
+                )
+                db.add(ur)
+        
+        await db.commit()

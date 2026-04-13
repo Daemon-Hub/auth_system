@@ -14,3 +14,9 @@ async def get_user_by_id(user_id: int, db: AsyncSession) -> User:
         select(User).where(User.id == user_id)
     )
     return result.scalar_one_or_none()
+
+async def create_user(user: User, db: AsyncSession) -> User:
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user

@@ -155,7 +155,7 @@ async def init_roles_and_permissions(db: AsyncSession) -> dict:
         existing_rps = await db.execute(
             select(RolePermission).where(RolePermission.role_id == role_id)
         )
-        existing_perm_ids = {rp.permission_id for rp in existing_rps.all()}
+        existing_perm_ids = {rp.permission_id for rp in existing_rps.scalars().all()}
         
         for perm_id in permission_ids:
             if perm_id not in existing_perm_ids:
@@ -176,8 +176,8 @@ def print_init_results(results: dict):
     print(f"Permissions created: {results['permissions_created']}")
     print(f"Role permissions assigned: {results['role_permissions_assigned']}")
     print("="*50 + "\n")
-    
-    
+
+
 async def init_rbac_data(db: AsyncSession) -> dict:
     print("Initializing RBAC system...")
     results = await init_roles_and_permissions(db)

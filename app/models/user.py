@@ -19,7 +19,6 @@ class User(SQLModel, table=True):
     email: str = Field(index=True, unique=True)
     password: str
     is_active: bool = Field(default=True)
-    is_superuser: bool = Field(default=False)
     
     refresh_token: Optional["RefreshToken"] = Relationship(back_populates="user")
     user_roles: List["UserRole"] = Relationship(back_populates="user")

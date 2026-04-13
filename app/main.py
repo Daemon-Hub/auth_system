@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 import logging
 
 from .settings import settings
-from .database import create_tables
+from .database import create_tables, AsyncSessionLocal
 from .routes.user import router
 from .init_rbac_data import init_rbac_data
+from .init_users_with_roles import init_users_with_roles
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -19,7 +20,11 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_tables()
-    await init_rbac_data()
+    
+    async with AsyncSessionLocal() as db:
+        await init_rbac_data(db)
+        await init_users_with_roles(db)
+        
     yield
     
 
