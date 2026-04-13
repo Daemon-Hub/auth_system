@@ -1,8 +1,12 @@
 from sqlmodel import SQLModel, Field, Column, DateTime, Relationship
 from datetime import datetime, timezone
 from uuid import UUID, uuid7
-from typing import Optional
+from typing import List, Optional
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .rbac import UserRole
 
 __all__ = ("User", "RefreshToken")
 
@@ -18,6 +22,7 @@ class User(SQLModel, table=True):
     is_superuser: bool = Field(default=False)
     
     refresh_token: Optional["RefreshToken"] = Relationship(back_populates="user")
+    user_roles: List["UserRole"] = Relationship(back_populates="user")
     
     
 class RefreshToken(SQLModel, table=True):

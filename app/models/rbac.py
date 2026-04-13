@@ -3,6 +3,10 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .user import User
 
 __all__ = ("Role", "Permission", "RolePermission", "UserRole")
 
@@ -59,4 +63,5 @@ class UserRole(SQLModel, table=True):
     )
     assigned_by: Optional[UUID] = Field(default=None)
     
+    user: "User" = Relationship(back_populates="user_roles")
     role: Role = Relationship(back_populates="user_roles")
