@@ -6,6 +6,7 @@ import logging
 from .settings import settings
 from .database import create_tables
 from .routes.user import router
+from .init_rbac_data import init_rbac_data
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -18,6 +19,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_tables()
+    await init_rbac_data()
     yield
     
 
