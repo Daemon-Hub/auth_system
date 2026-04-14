@@ -1,19 +1,11 @@
-from datetime import datetime
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 from sqlmodel import SQLModel
 
 from .role import RoleRead
 
 class UserRoleAssign(SQLModel):
-    role_ids: List[UUID]
-    
-class UserRoleRead(SQLModel):
-    user_id: UUID
-    role_id: UUID
-    assigned_at: datetime
-    assigned_by: Optional[UUID] = None
-    role: RoleRead
+    role_ids: List[UUID]  
     
 class UserRolesRead(SQLModel):
     user_id: UUID

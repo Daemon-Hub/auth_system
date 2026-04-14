@@ -17,9 +17,4 @@ class PermissionRead(PermissionBase):
     id: UUID
     created_at: datetime
     
-class PermissionUpdate(SQLModel):
-    name: Optional[str] = Field(default=None, max_length=100)
-    resource: Optional[str] = Field(default=None, max_length=50)
-    action: Optional[str] = Field(default=None, max_length=50)
-    description: Optional[str] = Field(default=None, max_length=500)
     

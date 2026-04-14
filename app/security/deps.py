@@ -7,12 +7,13 @@ from .jwt import decode_token
 from .blacklist import is_token_blacklisted
 from ..models import User
 from ..database import get_session
-from ..crud.user import get_user_by_id
-from ..services.rbac import RBACService 
+from ..services import RBACService, UserService
 
-
-
-__all__ = ("oauth2_scheme", "get_current_active_user")
+__all__ = (
+    "oauth2_scheme", 
+    "get_current_active_user", 
+    "require_permission"
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 optional_oauth2_scheme = OAuth2PasswordBearer(
@@ -41,7 +42,7 @@ async def check_user(token: str, db: AsyncSession) -> User:
             detail="Invalid token payload"
         )
     
-    user = await get_user_by_id(user_id, db)
+    user = await UserService.get_user_by_id(user_id, db)
     if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

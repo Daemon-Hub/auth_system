@@ -104,7 +104,10 @@ async def get_permissions(
 async def get_analytics(
     user: User = Depends(require_permission("analytics", "read"))
 ):
-    return {"data": MOCK_ANALYTICS, "access_granted_to": user.email}
+    return {
+        "data": MOCK_ANALYTICS, 
+        "access_granted_to": user.email
+    }
 
 @router.post("/analytics/export")
 async def export_analytics(
@@ -151,6 +154,6 @@ async def trigger_backup(
 ):
     return {
         "message": "Database backup started", 
-        "triggered_by": user.email
+        "triggered_by": user.email 
     }
 

@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import List
 
 class Settings(BaseSettings):
     SECRET_KEY: str
@@ -19,7 +20,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # CORS
-    CORS_ALLOWED_ORIGINS: list[str] = [
+    CORS_ALLOWED_ORIGINS: List[str] = [
         '127.0.0.1'
     ]
     

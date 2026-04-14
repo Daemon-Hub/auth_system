@@ -8,6 +8,7 @@ from ..schemas.user import (
     LoginRequest, AccessTokenResponse, 
     UpdateUserRequest, ChangePasswordRequest
 )
+from ..services import UserService, RefreshTokenService
 from ..models import User
 from ..security import (
     create_access_token, 
@@ -18,12 +19,7 @@ from ..security import (
     get_current_active_user, 
     oauth2_scheme
 )
-from ..crud.user import get_user_by_email
-from ..crud.refresh_token import (
-    add_refresh_token, 
-    delete_refresh_token,
-    get_refresh_token
-)
+
 
 router = APIRouter(prefix="/users")
 
@@ -39,23 +35,23 @@ async def register(
             detail="Passwords do not match"
         )
     
-    existing_user = await get_user_by_email(request.email, db)
+    existing_user = await UserService.get_user_by_email(request.email, db)
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 
             detail="Email already registered"
         )
     
-    new_user = User(
-        first_name=request.first_name,
-        last_name=request.last_name,
-        patronymic=request.patronymic,
-        email=request.email,
-        password=hash_password(request.password)
+    new_user = await UserService.create_user(
+        User(
+            first_name=request.first_name,
+            last_name=request.last_name,
+            patronymic=request.patronymic,
+            email=request.email,
+            password=hash_password(request.password)
+        ), 
+        db
     )
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
     
     return RegisterResponse(
         id=new_user.id,
@@ -72,7 +68,7 @@ async def login(
     db: AsyncSession = Depends(get_session),
     response: Response = None,
 ) -> AccessTokenResponse:
-    user = await get_user_by_email(request.email, db)
+    user = await UserService.get_user_by_email(request.email, db)
     
     if not user:
         raise HTTPException(
@@ -95,8 +91,12 @@ async def login(
     access_token = create_access_token(str(user.id))
     plain_refresh = generate_refresh_token()
     
-    await delete_refresh_token(user_id=user.id, db=db)
-    await add_refresh_token(token=plain_refresh, user_id=user.id, db=db)
+    await RefreshTokenService.delete_refresh_token(user_id=user.id, db=db)
+    await RefreshTokenService.add_refresh_token(
+        token=plain_refresh, 
+        user_id=user.id, 
+        db=db
+    )
     
     response.set_cookie(
         key="refresh_token",
@@ -118,7 +118,7 @@ async def logout(
     db: AsyncSession = Depends(get_session),
     response: Response = None
 ):
-    await delete_refresh_token(user_id=current_user.id, db=db)
+    await RefreshTokenService.delete_refresh_token(user_id=current_user.id, db=db)
     await blacklist_token(
         token=token, 
         user_id=current_user.id, 
@@ -160,7 +160,7 @@ async def update_user(
 @router.patch("/me/change-password")
 async def change_password(
     request: ChangePasswordRequest,
-    current_user: User | None = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_session)
 ):
     if not verify_password(request.current_password, current_user.password):
@@ -196,16 +196,15 @@ async def delete_account(
     db: AsyncSession = Depends(get_session)
 ):
     await logout(current_user=current_user, token=token, db=db)
-    
+
     current_user.is_active = False
-    
     db.add(current_user)
     await db.commit()
     
     return {"detail": "Account deleted successfully"}
 
 
-@router.post("/refresh")
+@router.post("/refresh", response_model=AccessTokenResponse)
 async def refresh_token(
     refresh_token: str = Cookie(None, alias="refresh_token"),
     db: AsyncSession = Depends(get_session),
@@ -217,7 +216,9 @@ async def refresh_token(
             detail="Refresh token missing"
         )
 
-    token_record = await get_refresh_token(token=refresh_token, db=db)
+    token_record = await RefreshTokenService.get_refresh_token(
+        token=refresh_token, db=db
+    )
     if not token_record:
         raise HTTPException(
             status_code=401, 
@@ -227,8 +228,10 @@ async def refresh_token(
     access_token = create_access_token(str(token_record.user_id))
     plain_refresh = generate_refresh_token()
     
-    await delete_refresh_token(user_id=token_record.user_id, db=db)
-    await add_refresh_token(
+    await RefreshTokenService.delete_refresh_token(
+        user_id=token_record.user_id, db=db
+    )
+    await RefreshTokenService.add_refresh_token(
         token=plain_refresh, 
         user_id=token_record.user_id, 
         db=db

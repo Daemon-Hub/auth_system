@@ -1,20 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import logging
 
 from .settings import settings
 from .database import create_tables, AsyncSessionLocal
 from .routes import routes
 from .init_rbac_data import init_rbac_data
 from .init_users_with_roles import init_users_with_roles
-
-logging.basicConfig(
-    level=logging.INFO, 
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    handlers=[logging.StreamHandler()] 
-)
 
 
 @asynccontextmanager
