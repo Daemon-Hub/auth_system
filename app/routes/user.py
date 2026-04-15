@@ -42,7 +42,7 @@ async def register(
             detail="Email already registered"
         )
     
-    new_user = await UserService.create_user(
+    new_user = await UserService.create_user_with_roles(
         User(
             first_name=request.first_name,
             last_name=request.last_name,
@@ -53,13 +53,7 @@ async def register(
         db
     )
     
-    return RegisterResponse(
-        id=new_user.id,
-        first_name=new_user.first_name,
-        last_name=new_user.last_name,
-        patronymic=new_user.patronymic,
-        email=new_user.email
-    )
+    return RegisterResponse.model_validate(new_user) 
 
 
 @router.post("/login", response_model=AccessTokenResponse)

@@ -1,13 +1,24 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import logging
 
 from .settings import settings
 from .database import create_tables, AsyncSessionLocal
 from .routes import routes
 from .init_rbac_data import init_rbac_data
 from .init_users_with_roles import init_users_with_roles
+from .middleware import (
+    AuditAndPerformanceMiddleware, 
+    SecurityHeadersMiddleware
+)
 
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[logging.StreamHandler()] 
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,6 +32,7 @@ async def lifespan(app: FastAPI):
     
 
 app = FastAPI(lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ALLOWED_ORIGINS,       
@@ -28,5 +40,8 @@ app.add_middleware(
     allow_methods=["*"],         
     allow_headers=["*"],         
 )
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(AuditAndPerformanceMiddleware)
+
 for router in routes:
     app.include_router(router)

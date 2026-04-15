@@ -1,7 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+from typing import List
 
 from ..models import User
+from .rbac import RBACService
 
 class UserService:
     @staticmethod
@@ -10,6 +12,20 @@ class UserService:
         await db.commit()
         await db.refresh(user)
         return user
+    
+    @staticmethod
+    async def create_user_with_roles(
+        user: User, 
+        db: AsyncSession,
+        role_names: List[str] = ["user"],
+    ) -> User:
+        new_user = await UserService.create_user(user, db)
+        await RBACService.add_roles_to_user(
+            db, user.id,
+            [(await RBACService.get_role_by_name(db, role)).id
+             for role in role_names]
+        )
+        return new_user
     
     @staticmethod
     async def get_user_by_email(email: str, db: AsyncSession) -> User:
